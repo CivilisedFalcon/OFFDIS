@@ -10,11 +10,11 @@ int main() {
     
     printf("Please enter your message\n");
     
-    scanf("%s", message);
+    scanf("%s", &message);
     
     printf("Please enter destination User or IP\n");    //but now only User
     
-    scanf("%s", dest);
+    scanf("%s", &dest);
     
     strcpy(filedest, dest);
     strcat(filedest, ".txt");
