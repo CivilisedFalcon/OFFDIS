@@ -10,11 +10,13 @@ int main() {
     
     printf("Please enter your message\n");
     
-    gets(message);
+    fgets(message, MAX_LEN, stdin);
+    message[strlen(message) - 1] = '\0';
     
     printf("Please enter destination User or IP\n");    //but now only User
     
-    gets(dest);
+    fgets(dest, MAX_LEN, stdin);
+    dest[strlen(dest) - 1] = '\0';
     
     strcpy(filedest, dest);
     strcat(filedest, ".txt");
