@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <windows.h>
 #include <ctype.h>
+#include <time.h>
 #define MAX_ARP 10
 #define BUFFER_SIZE 255
 
@@ -15,28 +15,37 @@ typedef struct {
 
 IP_add HOTSPOT_IP = { 192, 168, 137, 1 };
 ARP ARP_LIST[MAX_ARP];
+FILE* users, * logs;
 
-void UPDATE_INTERRUPT();
+void DEVICE_CONNECT_INTERRUPT(ARP arp);
+void DEVICE_DISCONNECT_INTERRUPT(ARP arp);
+void refresh_arp();
 void update_arp(ARP arp);
 void make_arp(char* buf, ARP* arp);
 int find_ip(char* buf, IP_add ip);
 int find_mac(char* buf, MAC_add mac);
 int find_type(char* buf, char *type);
 void print_arp(ARP arp);
+void log(int type, ARP arp);
+void manage_user(int type, ARP arp);
 
 int main()
 {
 	// First, set all objects in the ARP_LIST to null.
 	for (int i = 0; i < MAX_ARP; i++)
-		ARP_LIST[i].type = 'n'; // 'n' is null
+		ARP_LIST[i].type = 'n';
+
+	fopen_s(&log, "log.txt", "w+");
+	fopen_s(&users, "users.txt", "w+");
+	fclose(log);
+	fclose(users);
 
 	char buf[BUFFER_SIZE] = { 0, };
 	ARP arp;
 	IP_add ip;
 	int c = 0;
 	bool find = false;
-
-	FILE* fp = _popen("arp -a", "rt");
+	FILE* fp;
 	
 	while (1) 
 	{
@@ -58,7 +67,6 @@ int main()
 					{
 						if (strlen(buf) == 1)
 							break;
-
 						make_arp(buf, &arp);
 						update_arp(arp); //After make ARP, the change is updated in the ARP_LIST.
 					}
@@ -67,19 +75,71 @@ int main()
 				}
 			}
 		}
-		Sleep(1000);
-	}
+		_sleep(1000);
 
-	_pclose(fp);
+		refresh_arp();
+		_pclose(fp);
+	}
 
 
 	return 0;
 }
 
-void UPDATE_INTERRUPT(ARP arp)
+void DEVICE_CONNECT_INTERRUPT(ARP arp)
 {
-	printf("\nNew device connected to network.\n");
-	print_arp(arp);
+	manage_user(0, arp);
+	log(0, arp);
+}
+
+void DEVICE_DISCONNECT_INTERRUPT(ARP arp)
+{
+	manage_user(1, arp);
+	log(1, arp);
+}
+
+void refresh_arp()
+{
+	FILE* fp = NULL;
+	char command[32], buf[BUFFER_SIZE];
+	int i, j;
+
+	// 연결끊긴 arp 감지
+	for (i = 0; i < MAX_ARP; i++)
+	{
+		if (ARP_LIST[i].type == 'n'
+			|| ARP_LIST[i].type == 'u')
+			continue;
+
+		sprintf_s(command, 32, "ping %d.%d.%d.%d -n 1", ARP_LIST[i].ip_add[0], ARP_LIST[i].ip_add[1], ARP_LIST[i].ip_add[2], ARP_LIST[i].ip_add[3]);
+		fp = _popen(command, "rt");
+		fgets(buf, BUFFER_SIZE, fp);
+		fgets(buf, BUFFER_SIZE, fp);
+		fgets(buf, BUFFER_SIZE, fp);
+		if (!('0' < buf[0] && '9' > buf[0]))
+		{
+			ARP_LIST[i].type = 'u';
+			DEVICE_DISCONNECT_INTERRUPT(ARP_LIST[i]);
+		}
+		_pclose(fp);
+	}
+
+	// 재연결된 arp 감지
+	for (i = 0; i < MAX_ARP; i++)
+	{
+		if (ARP_LIST[i].type == 'u')
+		{
+			sprintf_s(command, 32, "ping %d.%d.%d.%d -n 1", ARP_LIST[i].ip_add[0], ARP_LIST[i].ip_add[1], ARP_LIST[i].ip_add[2], ARP_LIST[i].ip_add[3]);
+			fp = _popen(command, "rt");
+			fgets(buf, BUFFER_SIZE, fp);
+			fgets(buf, BUFFER_SIZE, fp);
+			fgets(buf, BUFFER_SIZE, fp);
+			if ('0' < buf[0] && '9' > buf[0]) {
+				ARP_LIST[i].type = 's';
+				DEVICE_CONNECT_INTERRUPT(ARP_LIST[i]);
+			}
+			_pclose(fp);
+		}
+	}
 }
 
 void update_arp(ARP arp)
@@ -90,13 +150,14 @@ void update_arp(ARP arp)
 		{
 			if (ARP_LIST[i].type == 'n') {
 				// Make Interrupt when new ARP has been updated. (Temporarily using a function)
-				UPDATE_INTERRUPT(arp);
 				ARP_LIST[i] = arp;
+				DEVICE_CONNECT_INTERRUPT(arp);
 				break;
 			}
-			if (memcmp(arp.mac_add, ARP_LIST[i].mac_add, sizeof(MAC_add)) == 0)
+			if (memcmp(arp.mac_add, ARP_LIST[i].mac_add, sizeof(MAC_add)) == 0) {
 				// Compare MAC addresses to check ARP already exists or not.
 				break;
+			}
 		}
 	}
 }
@@ -197,7 +258,7 @@ int find_type(char* buf, char* type)
 
 void print_arp(ARP arp)
 {
-	if (arp.type != 'n') 
+	if (arp.type != 'n' && arp.type != 'u')
 	{
 		int i = 0;
 
@@ -214,4 +275,76 @@ void print_arp(ARP arp)
 		printf(" Type: %c", arp.type);
 		printf("\n");
 	}
+}
+
+void log(int type, ARP arp)
+{
+	time_t current = time(NULL);
+	struct tm t;
+	localtime_s(&t, &current);
+	char log[64];
+
+	fopen_s(&logs, "log.txt", "a+");
+
+	if (type == 0)
+		sprintf_s(log, 64, "[%d-%d-%d %d:%d:%d] %02X:%02X:%02X:%02X:%02X:%02X has been connected.\n", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, arp.mac_add[0], arp.mac_add[1], arp.mac_add[2], arp.mac_add[3], arp.mac_add[4], arp.mac_add[5]);
+	else if (type == 1)
+		sprintf_s(log, 64, "[%d-%d-%d %d:%d:%d] %02X:%02X:%02X:%02X:%02X:%02X has been disconnected.\n", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, arp.mac_add[0], arp.mac_add[1], arp.mac_add[2], arp.mac_add[3], arp.mac_add[4], arp.mac_add[5]);
+	else
+		return;
+	fwrite(log, sizeof(char), strlen(log), logs);
+	printf("%s", log);
+
+	fclose(logs);
+}
+
+void manage_user(int type, ARP arp)
+{
+	int i = 0;
+	char user[64], _user[MAX_ARP][64];
+	fopen_s(&users, "users.txt", "r+");
+
+	sprintf_s(user, 64, "%d.%d.%d.%d / %02X:%02X:%02X:%02X:%02X:%02X\n", arp.ip_add[0], arp.ip_add[1], arp.ip_add[2], arp.ip_add[3], arp.mac_add[0], arp.mac_add[1], arp.mac_add[2], arp.mac_add[3], arp.mac_add[4], arp.mac_add[5]);
+
+	if (type == 0)
+	{
+		while (fgets(_user[i], 64, users))
+		{
+			if (strcmp(user, _user[i]) == 0) {
+				fclose(users);
+				return;
+			}
+		}
+
+		fwrite(user, sizeof(char), strlen(user), users);
+		fclose(users);
+	}
+	else if (type == 1)
+	{
+		FILE* tmp;
+		fopen_s(&tmp, "tmp.txt", "w");
+
+		while (fgets(_user[i], 64, users))
+		{
+			if (strcmp(user, _user[i]) == 0)
+				i--;
+
+			i++;
+		}
+
+		for (int j = 0; j < i; j++)
+			fwrite(_user[j], sizeof(char), strlen(_user[j]), tmp);
+
+		fclose(users);
+		fclose(tmp);
+		remove("users.txt");
+		rename("tmp.txt", "users.txt");
+	}
+	else
+	{
+
+	}
+
+	//fclose(tmp);
+	//fclose(users);
 }
