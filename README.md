@@ -22,6 +22,3 @@ List of relevant files:
 ### Wireless Access
 List of relevant files:
 - detect_connection.c
-
-##### *only connect detection function is performed yet.*
-##### *disconnect detection function will be added*
