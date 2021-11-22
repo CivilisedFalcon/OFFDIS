@@ -6,13 +6,20 @@
 #define MAX 256
 #define END_LEN 3
 
-char WIFI_IP[] = "192.168.137.1";
-char PORT_NUM[] = "1234";
 char END[] = "END";
+char IP_ADDR[] = "\0";
+char PORT_NUM[] = "\0";
 
 
-void main()
+void main(int argc, char* argv[])
 {
+	if (argc != 3) {
+		printf("p2p_filesend (IP_ADDR) (PORT_NUM)");
+		exit(1);
+	}
+	memcpy(IP_ADDR, argv[1], strlen(argv[1]));
+	memcpy(PORT_NUM, argv[2], strlen(argv[2]));
+	
 	FILE* fp;
 
 	WSADATA wsaData;
@@ -38,7 +45,7 @@ void main()
 	// address seetting
 	memset(&sendAddr, 0, sizeof(sendAddr));
 	sendAddr.sin_family = AF_INET;
-	sendAddr.sin_addr.S_un.S_addr = inet_addr(WIFI_IP);
+	sendAddr.sin_addr.S_un.S_addr = inet_addr(IP_ADDR);
 	sendAddr.sin_port = htons(atoi(PORT_NUM));
 
 	if (connect(sendSock, (SOCKADDR*)&sendAddr, sizeof(sendAddr)) != SOCKET_ERROR) {
