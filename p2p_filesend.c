@@ -19,7 +19,7 @@ void main(int argc, char* argv[])
 	}
 	memcpy(IP_ADDR, argv[1], strlen(argv[1]));
 	memcpy(PORT_NUM, argv[2], strlen(argv[2]));
-	
+
 	FILE* fp;
 
 	WSADATA wsaData;
@@ -72,39 +72,39 @@ void main(int argc, char* argv[])
 		closesocket(sendSock);
 
 		// socket setting
-		recvSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (recvSock == INVALID_SOCKET) {
+		sendSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (sendSock == INVALID_SOCKET) {
 			printf("socket() error.\n");
 			WSACleanup();
 			exit(1);
 		}
 
 		// address setting
-		memset(&recvAddr, 0, sizeof(recvAddr));
-		recvAddr.sin_family = AF_INET;
-		recvAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-		recvAddr.sin_port = htons(atoi(PORT_NUM));
+		memset(&sendAddr, 0, sizeof(sendAddr));
+		sendAddr.sin_family = AF_INET;
+		sendAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+		sendAddr.sin_port = htons(atoi(PORT_NUM));
 
-		if (bind(recvSock, (SOCKADDR*)&recvAddr, sizeof(recvAddr)) == SOCKET_ERROR) {
+		if (bind(sendSock, (SOCKADDR*)&sendAddr, sizeof(sendAddr)) == SOCKET_ERROR) {
 			printf("bind() error.\n");
-			closesocket(recvSock);
+			closesocket(sendSock);
 			WSACleanup();
 			exit(1);
 		}
 
-		if (listen(recvSock, 5) == SOCKET_ERROR) {
+		if (listen(sendSock, 5) == SOCKET_ERROR) {
 			printf("listen() error.\n");
-			closesocket(recvSock);
+			closesocket(sendSock);
 			WSACleanup();
 			exit(1);
 		}
 
 		printf("listen succeed.\n");
-		int szSendAddr = sizeof(sendAddr);
-		sendSock = accept(recvSock, (SOCKADDR*)&sendAddr, &szSendAddr);
-		if (sendSock == INVALID_SOCKET || sendSock == SOCKET_ERROR) {
+		int szRecvAddr = sizeof(recvAddr);
+		recvSock = accept(sendSock, (SOCKADDR*)&recvAddr, &szRecvAddr);
+		if (recvSock == INVALID_SOCKET || recvSock == SOCKET_ERROR) {
 			printf("accept() error.\n");
-			closesocket(recvSock);
+			closesocket(sendSock);
 			exit(1);
 		}
 
@@ -112,7 +112,7 @@ void main(int argc, char* argv[])
 
 		char compare[END_LEN + 1] = "\0";
 		int l;
-		while (l = recv(sendSock, buf, MAX, 0)) {
+		while (l = recv(recvSock, buf, MAX, 0)) {
 			for (int i = 1; i <= END_LEN; i++) {
 				compare[END_LEN - i] = buf[strlen(buf) - i];
 			}
@@ -126,8 +126,3 @@ void main(int argc, char* argv[])
 	}
 
 }
-
-
-
-
-
