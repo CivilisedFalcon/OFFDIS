@@ -33,6 +33,8 @@ gcc -pthread auth&messenging_client.c -o client
 List of relevant files:
 - messaging.c: used to send messages to destinations(txt file based destination, It will be changed to IP destination later)
 - user1(~3).txt: use it as a test destination to send a message
+- log&chattingroom_server.c: server source with make log file(chatting.log, current_time / from / message)
+- log&chattingroom_client.c: client works with server
 
 ### Wireless Access
 List of relevant files:
