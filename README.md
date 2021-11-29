@@ -40,6 +40,16 @@ List of relevant files:
 List of relevant files:
 - detect_connection.c
 
+### File Send
+```
+gcc filesend_server.c -o <S_name>
+gcc filesend_client.c -o <C_name>
+```
+Execute `./<S_name> <PORT>` first and `./<C_name> <SERVER_ADDR> <PORT>`  
+Then, you can check the IP and PORT of connected user with log `<IP>:<PORT>  "<UserName>" has joined` in server  
+To send file, type `SEND <IP> <PORT> <FileName>` in client. 
+Receiver receive file `<FileName>`
+
 ### Voting System
 Generating executables and executing them: 
 ```
