@@ -81,7 +81,7 @@ void download_file(char* filename) {
     char buffer[LENGTH + 1] = {};
     char* tmp;
     int l = 0;
-
+  
     FILE* fp = fopen(filename, "wb+");
     int i = 0;
     while (l = recv(sock, buffer, LENGTH, 0)) {
@@ -128,7 +128,7 @@ void send_msg_handler() {
 
 void recv_msg_handler() {
 	char message[LENGTH] = {};
-	char* tmp. * filename;
+	char* tmp, * filename;
     while (1) {
 	int receive = recv(sock, message, LENGTH, 0);
         if (receive > 0) {
@@ -213,4 +213,3 @@ int main(int argc, char **argv){
 
 	return 0;
 }
-
