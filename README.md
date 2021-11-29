@@ -40,7 +40,7 @@ List of relevant files:
 List of relevant files:
 - detect_connection.c
 
-### voting System
+### Voting System
 Generating executables and executing them: 
 ```
 gcc <filename.c> -o <executable_name>
