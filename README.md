@@ -39,3 +39,14 @@ List of relevant files:
 ### Wireless Access
 List of relevant files:
 - detect_connection.c
+
+### voting System
+Generating executables and executing them: 
+```
+gcc <filename.c> -o <executable_name>
+./<executable_name>
+```
+1)Yes
+2)No
+3)None
+4)Reset
