@@ -43,12 +43,12 @@ client_t *clients[MAX_CLIENTS];
 
 pthread_mutex_t clnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void update_log(char* message) {
+void update_log(char* message, char* filename) {
     FILE *fp;
     time_t current = time(NULL);
     struct tm *now = localtime(&current);
     
-    fp = fopen("chatting.log", "a");
+    fp = fopen(filename, "a");
     fprintf(fp, "[%04d/%02d/%02d] %02d:%02d:%02d %s"
             ,1900 + now->tm_year, now->tm_mon + 1, now->tm_mday
             ,now->tm_hour, now->tm_min, now->tm_sec, message);
@@ -176,13 +176,16 @@ void *handle_client(void *arg){
             {
                 strcpy(cli->username, username);
 		        sprintf(buff_out, "%s has joined\n", cli->username);
-                update_log(buff_out);
+                update_log(buff_out, "login.log");
+                update_log(buff_out, "chatting.log");
 		        printf("%s", buff_out);
 		        send_message(buff_out, cli->uid);
                 fclose(fPtr);
             }
             else{
                 printf("Incorrect Password.\n");
+                sprintf(buff_out, "%s enter incorrect Password.\n", username);
+                update_log(buff_out, "login.log");
 		        leave_flag = 1;
             }
         }
@@ -198,7 +201,7 @@ void *handle_client(void *arg){
 		int receive = recv(cli->sockfd, buff_out, BUFFER_SZ, 0);
 		if (receive > 0){
 			if(strlen(buff_out) > 0){
-                update_log(buff_out);
+                update_log(buff_out, "chatting.log");
 				send_message(buff_out, cli->uid);
 
 				str_trim_lf(buff_out, strlen(buff_out));
@@ -208,7 +211,8 @@ void *handle_client(void *arg){
         else if (receive == 0 || strcmp(buff_out, "exit") == 0){
 			sprintf(buff_out, "%s has left\n", cli->username);
 			printf("%s", buff_out);
-            update_log(buff_out);
+            update_log(buff_out, "chatting.log");
+            update_log(buff_out, "login.log");
 			send_message(buff_out, cli->uid);
 			leave_flag = 1;
 		} 
