@@ -50,3 +50,4 @@ gcc <filename.c> -o <executable_name>
 2)No
 3)None
 4)Reset
+- vote.txt : One file continues to be overwritten.
