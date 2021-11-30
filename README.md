@@ -60,13 +60,13 @@ Generating executables and executing them:
 ```
 gcc <filename.c> -o <executable_name>
 ./<executable_name>
-```
 #vote <voting name>
-<voting name>  
+<voting name>
 1)YES
 2)NO
 3)NONE
 1
 0
 #result
+```
 - vote.txt : One file continues to be overwritten.
