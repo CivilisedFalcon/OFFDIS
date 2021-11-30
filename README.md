@@ -61,8 +61,12 @@ Generating executables and executing them:
 gcc <filename.c> -o <executable_name>
 ./<executable_name>
 ```
-1)Yes
-2)No
-3)None
-4)Reset
+#vote <voting name>
+<voting name>
+1)YES
+2)NO
+3)NONE
+1
+0
+#result
 - vote.txt : One file continues to be overwritten.
