@@ -62,7 +62,7 @@ gcc <filename.c> -o <executable_name>
 ./<executable_name>
 ```
 #vote <voting name>
-<voting name>
+<voting name>  
 1)YES
 2)NO
 3)NONE
