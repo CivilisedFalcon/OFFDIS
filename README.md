@@ -60,6 +60,7 @@ Generating executables and executing them:
 ```
 gcc <filename.c> -o <executable_name>
 ./<executable_name>
+
 #vote <voting name>
 <voting name>
 1)YES
