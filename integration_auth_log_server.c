@@ -9,9 +9,10 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #define MAX_CLIENTS 100
-#define BUFFER_SZ 2048
+#define BUFFER_SZ 2082
 #define DATA_SIZE 100
 #define TRUE 1
 
@@ -42,6 +43,43 @@ typedef struct{
 client_t *clients[MAX_CLIENTS];
 
 pthread_mutex_t clnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+bool is_send_command(char* msg, char** IP, char** PORT, char** filename) {
+    char* option;
+    char message[BUFFER_SZ + 1] = {};
+
+    strcpy(message, msg);
+    message[5] = '\0';
+    if (strcmp(message, "SEND ") == 0) {
+        option = msg + 5;
+        option = strtok(option, " ");
+        *IP = option;
+        option = strtok(NULL, " ");
+        *PORT = option;
+        option = strtok(NULL, " ");
+        *filename = option;
+
+        return true;
+    }
+
+    return false;
+}
+
+void download_file(client_t* cli, char* IP, char* PORT) {
+    char buffer[BUFFER_SZ + 1] = {};
+    char* tmp;
+    int l = 0;
+
+    FILE* fp = fopen("download.txt", "wb+");
+    int i = 0;
+    while (l = recv(cli->sockfd, buffer, BUFFER_SZ, 0)) {
+        if ((tmp = strstr(buffer, "*")) != NULL) {
+            send_message_to(buffer, IP, PORT);
+            break;
+        }
+        send_message_to(buffer, IP, PORT);
+    }
+}
 
 void update_log(char* message, char* filename) {
     FILE *fp;
@@ -125,6 +163,24 @@ void send_message(char *s, int uid){
 	pthread_mutex_unlock(&clnt_mutex);
 }
 
+void send_message_to(char* s, char* IP, char* PORT) {
+    pthread_mutex_lock(&clnt_mutex);
+
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
+        if (clients[i]) {
+            if ((strcmp(inet_ntoa(clients[i]->address.sin_addr), IP) == 0)
+                && (clients[i]->address.sin_port == atoi(PORT))) {
+                if (write(clients[i]->sockfd, s, strlen(s)) < 0) {
+                    perror("ERROR: write to descriptor failed");
+                    break;
+                }
+            }
+        }
+    }
+
+    pthread_mutex_unlock(&clnt_mutex);
+}
+
 /* Handle all communication with the client */
 void *handle_client(void *arg){
 	char buff_out[BUFFER_SZ];
@@ -133,6 +189,7 @@ void *handle_client(void *arg){
 	int leave_flag = 0;
     char hashpass2[100];
     char line[1000];
+    char* IP, *PORT, *filename;
 
 	clnt_count++;
 	client_t *cli = (client_t *)arg;
@@ -175,7 +232,10 @@ void *handle_client(void *arg){
             if(strcmp(line, hashpass2) == 10)
             {
                 strcpy(cli->username, username);
-		        sprintf(buff_out, "%s has joined\n", cli->username);
+                    sprintf(buff_out, "%s:%d  \"%s\" has joined\n",
+                    inet_ntoa(cli->address.sin_addr), 
+                    cli->address.sin_port,
+                    cli->username);
                 update_log(buff_out, "login.log");
                 update_log(buff_out, "chatting.log");
 		        printf("%s", buff_out);
@@ -202,10 +262,16 @@ void *handle_client(void *arg){
 		if (receive > 0){
 			if(strlen(buff_out) > 0){
                 update_log(buff_out, "chatting.log");
-				send_message(buff_out, cli->uid);
+                if (is_send_command(buff_out, &IP, &PORT, &filename)) {
+                    send_message_to(buff_out, IP, PORT);
+                    download_file(cli, IP, PORT);
+                }
+                else {
+                    send_message(buff_out, cli->uid);
 
-				str_trim_lf(buff_out, strlen(buff_out));
-				printf("%s -> %s\n", buff_out, cli->username);
+                    str_trim_lf(buff_out, strlen(buff_out));
+                    printf("%s -> %s\n", buff_out, cli->username);
+                }
 			}
 		} 
         else if (receive == 0 || strcmp(buff_out, "exit") == 0){

@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #define LENGTH 2082
 
@@ -35,9 +36,71 @@ void catch_ctrl_c_and_exit(int sig) {
     flag = 1;
 }
 
+
+bool is_send_command(char* msg, char** IP, char** PORT, char** filename) {
+    char* option;
+    char message[LENGTH + 1] = {};
+    char tmp;
+    strcpy(message, msg);
+    
+    tmp = message[5];
+    message[5] = '\0';
+    if (strcmp(message, "SEND ") == 0) {
+        message[5] = tmp;
+        option = message + 5;
+        
+        option = strtok(option, " ");
+        *IP = option;
+        
+        option = strtok(NULL, " ");
+        *PORT = option;
+        
+        option = strtok(NULL, " ");
+        *filename = option;
+        
+        return true;
+    }
+    
+    return false;
+}
+
+void send_file(char* filename) {
+    FILE* fp = fopen(filename, "r");
+    sleep(1);
+    char buffer[LENGTH + 1] = {};
+    int l;
+    do {
+        fread(buffer, sizeof(char), LENGTH, fp);
+        l = send(sock, buffer, strlen(buffer), 0);
+        memset(buffer, 0, LENGTH + 1);
+    } while (feof(fp) == 0);
+    send(sock, "*", sizeof("*"), 0);
+    fclose(fp);
+}
+
+void download_file(char* filename) {
+    char buffer[LENGTH + 1] = {};
+    char* tmp;
+    int l = 0;
+  
+    FILE* fp = fopen(filename, "wb+");
+    int i = 0;
+    while (l = recv(sock, buffer, LENGTH, 0)) {
+        if ((tmp = strstr(buffer, "*")) != NULL) {
+            *tmp = '\0';
+            fwrite(buffer, sizeof(char), strlen(buffer), fp);
+            break;
+        }
+        fwrite(buffer, sizeof(char), l, fp);
+    }
+    printf("Download complete.\n");
+    fclose(fp);
+}
+
 void send_msg_handler() {
     char message[LENGTH] = {};
-	char buffer[LENGTH + 32] = {};
+    char buffer[LENGTH + 32] = {};
+    char *IP, *PORT, *filename;
 
     while(1) {
   	    str_overwrite_stdout();
@@ -47,6 +110,10 @@ void send_msg_handler() {
         if (strcmp(message, "exit") == 0) {
 			break;
         } 
+        else if (is_send_command(message, &IP, &PORT, &filename)) {
+            send(sock, message, strlen(message), 0);
+            send_file(filename);
+        }
         else {
             sprintf(buffer, "%s: %s \n", username, message);
             send(sock, buffer, strlen(buffer), 0);
@@ -60,11 +127,17 @@ void send_msg_handler() {
 
 void recv_msg_handler() {
 	char message[LENGTH] = {};
+	char* tmp, *filename;
     while (1) {
 		int receive = recv(sock, message, LENGTH, 0);
     if (receive > 0) {
-      printf("%s", message);
-      str_overwrite_stdout();
+        if (is_send_command(message, &tmp, &tmp, &filename)) {
+            printf("Download..\n");
+            download_file("download.txt");
+        }
+        else
+            printf("%s", message);
+        str_overwrite_stdout();
     } 
     else if (receive == 0) {
 			break;
