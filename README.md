@@ -52,9 +52,6 @@ Then, you can check the IP and PORT of connected user with log `<IP>:<PORT>  "<U
 To send file, type `SEND <IP> <PORT> <FileName>` in client.  
 Receiver receive file `<FileName>`  
 
-#### Note
-if you want to test this on one device, change `filename` to `"<Anything>"` in Line 137 of filesend_client.c
-
 ### Voting System
 Generating executables and executing them: 
 ```
