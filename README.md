@@ -1,5 +1,22 @@
 # SWCapstoneDesign
 
+### Final Backend System
+
+
+#### List of relevant files (Final Offline System):
+- final_integration_server.c : Server for the Authentication amd messaging system.
+- final_integration_client.c : Client for messenging. Requires Username and Password to start chatting.
+- user_auth.txt: used to store user credentials
+
+Generating executables and executing them: 
+```
+gcc -pthread final_integration_server.c -o server
+gcc -pthread final_integration_client.c -o client
+
+./server <port> <server password>
+./client <IP> <port>
+```
+
 ### Authentication System
 
 #### List of relevant files (Basic Authentication standalone code):
@@ -22,11 +39,11 @@ Note: user_auth.txt should be present in the same directory as the executables f
 
 Generating executables and executing them: 
 ```
-gcc -pthread auth&messenging_server.c -o server
-gcc -pthread auth&messenging_client.c -o client
+gcc -pthread auth_messenging_server.c -o server
+gcc -pthread auth_messenging_client.c -o client
 
 ./server <port> <server password>
-./client <IP> <port> <password>
+./client <IP> <port>
 ```
 
 ### Message transmission system
