@@ -180,7 +180,7 @@ void send_message(char *s, int uid){
 					perror("ERROR: write to descriptor failed");
 					break;
 				}
-			}VOTE
+			}
 		}
 	}
 
