@@ -16,6 +16,10 @@ gcc -pthread final_integration_client.c -o client
 ./server <port> <server password>
 ./client <IP> <port>
 ```
+Command
+- (No parameter)<message>
+- SEND <DestIP> <DestPort> <filename>
+- VOTE#<Vote message> (not complete)
 
 ### Authentication System
 
