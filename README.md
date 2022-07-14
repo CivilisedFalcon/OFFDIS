@@ -1,4 +1,4 @@
-# SWCapstoneDesign
+# OFFDIS: A Backend Framework for an Offline Discord-like Communication Platform in C
 
 ### Final Backend System
 
